@@ -14,12 +14,10 @@ if (!File.Exists(file))
 }
 else
 {
-    // create parallel lists of character details
+    // create list of characters
     // lists are used since we do not know number of lines of data
-    List<UInt64> Ids = [];
-    List<string> Names = [];
-    List<string?> Descriptions = [];
-    // to populate the lists with data, read from the data file
+    // to populate the list with data, read from the data file
+    List<Character> characters = [];
     try
     {
         StreamReader sr = new(file);
@@ -30,14 +28,16 @@ else
             string? line = sr.ReadLine();
             if (line is not null)
             {
+                Character character = new();
                 // character details are separated with comma(,)
                 string[] characterDetails = line.Split(',');
                 // 1st array element contains id
-                Ids.Add(UInt64.Parse(characterDetails[0]));
+                character.Id = UInt64.Parse(characterDetails[0]);
                 // 2nd array element contains character name
-                Names.Add(characterDetails[1]);
+                character.Name = characterDetails[1] ?? string.Empty;
                 // 3rd array element contains character description
-                Descriptions.Add(characterDetails[2]);
+                character.Description = characterDetails[2] ?? string.Empty;
+                characters.Add(character);
             }
         }
         sr.Close();
@@ -61,33 +61,31 @@ else
         if (choice == "1")
         {
             // Add Character
+            Character character = new();
             Console.WriteLine("Enter new character name: ");
-            string? Name = Console.ReadLine();
-            if (!string.IsNullOrEmpty(Name)){
+            character.Name = Console.ReadLine() ?? string.Empty;
+            if (!string.IsNullOrEmpty(character.Name)){
                 // check for duplicate name
-                List<string> LowerCaseNames = Names.ConvertAll(n => n.ToLower());
-                if (LowerCaseNames.Contains(Name.ToLower()))
+                List<string> LowerCaseNames = characters.ConvertAll(character => character.Name.ToLower());
+                if (LowerCaseNames.Contains(character.Name.ToLower()))
                 {
-                    logger.Info($"Duplicate name {Name}");
+                    logger.Info($"Duplicate name {character.Name}");
                 }
                 else
                 {
                     // generate id - use max value in Ids + 1
-                    UInt64 Id = Ids.Max() + 1;
+                    character.Id = characters.Max(character => character.Id) + 1;
                     // input character description
                     Console.WriteLine("Enter description:");
-                    string? Description = Console.ReadLine();
-                    // Console.WriteLine($"{Id}, {Name}, {Description}");
+                    character.Description = Console.ReadLine() ?? string.Empty;
                     // create file from data
                     StreamWriter sw = new(file, true);
-                    sw.WriteLine($"{Id},{Name},{Description}");
+                    sw.WriteLine($"{character.Id},{character.Name},{character.Description}");
                     sw.Close();
                     // add new character details to Lists
-                    Ids.Add(Id);
-                    Names.Add(Name);
-                    Descriptions.Add(Description);
+                    characters.Add(character);
                     // log transaction
-                    logger.Info($"Character id {Id} added");
+                    logger.Info($"Character id {character.Id} added");
                 }
             } else {
                 logger.Error("You must enter a name");
@@ -96,14 +94,10 @@ else
         else if (choice == "2")
         {
             // Display All Characters
-            // loop thru Lists
-            for (int i = 0; i < Ids.Count; i++)
+            // loop thru List
+            foreach(Character character in characters)
             {
-                // display character details
-                Console.WriteLine($"Id: {Ids[i]}");
-                Console.WriteLine($"Name: {Names[i]}");
-                Console.WriteLine($"Description: {Descriptions[i]}");
-                Console.WriteLine();
+                Console.WriteLine(character.Display());
             }
         }
     } while (choice == "1" || choice == "2");
